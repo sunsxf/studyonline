@@ -1,0 +1,204 @@
+1.如果您在Pycharm中使用重构工具，并且意外地重命名整个项目的模型名称而不是单个文件，也会发生此问题。 这也会影响迁移文件，结果，makemigrations命令不知道该怎么做，并引发Value错误。
+通过进入所有迁移文件并重命名这些行来修复
+将apps目录mark为sourceroot,并在settings.py里配置apps到环境变量中,以后再使用apps里的
+模块时,就不用再在前面添加apps.前缀,这样Installed_apps里到配置也不用加包名,不然会导致意想不到
+到错误,特别注意数据库迁移文件中的字段
+2.在app中的admin模块中,注册相应model模块中的模型,就可以显示在后台管理系统中,默认有user,
+和group表,但由于我们重载了user表,故也需要显示注册
+3.django的一切开发是基于app的,后台管理系统也是,app需要放入installed_apps变量中
+4.xadmin会自动在每个app下面搜索adminx.py文件
+5.使用xadmin在后台注册模型时,应在urls.py中将默认导入到admin模块注释掉,否则在后台无法显示
+注册的模型.模型class Meta中的verbose_name即是后台中显示到名字,verbose_name_plural
+确实将导致显示到名字后面加上s.表里的verbose_name对应每个input标签的名字(label).
+choices属性生成一个下拉菜单,第一个参数为input标签的value,第二个是别名
+6.Django的admin或xadmin是基于注册到后台模型的增删改差工作,在模型中重载__unicode__方法
+会改变每个对象(每条记录)的名字,否则每条记录看起来都是Model object,py3中使用__str__或__repr__方法
+7.后台注册模型中的list_display变量为后台表中显示哪些列,有先后顺序,为列表
+search_fields为搜索操作,列表结构,表示在哪些字段中进行搜索,时间列不做搜索
+list_filter字段为筛选字段,可以分别对每列进行筛选(检索),可以包含时间类型
+8.模型外键字段对应一个下拉菜单,类似choices属性.注册到后台时,搜索和筛选字段需要给外键列
+指定被引用模型的字段.外键列有个i标签,对应被引用表的详情页面(特别是搜索字段)
+9.空字段属性:null=True,blank=True同时用
+10.注册模型到后台时,从上之下表(列)的顺序和模型注册顺序相同
+11.xadmin全局配置放置在任意一个app下的adminx模块中即可(本项目放在users包下)
+主题选择:BaseSetting类;
+from xadmin import views
+class GlobalSettings(object):
+    site_title = '元智后台管理系统' # 页头
+    site_footer = '元智在线网' # 页尾
+    menu_style = 'accordion' # 收起左侧导航栏
+xadmin.site.register(views.CommAdminView, GlobalSettings)
+每个app包下有个apps模块,在默认类下添加verbose_name字段,然后在同级包下的init模块
+中添加default_app_config字段.例如users下的配置为default_app_config='users.apps.UsersConfig'
+通过这两步可改变每个app名,即后台系统中导航栏下拉列表名
+12.所有的静态文件都是以/static开头,并要配置STATICFILES_DIRS
+13.根目录下的所有url开头都没有斜杠/
+14.a标签跳转href中要填URI的形式(不包括域名,ip),前后都应该有斜杠/,中间可填写对应的html
+文件或对应的别名
+15.当不需要写后台逻辑时,可直接在urls配置里用TemplateView.as_view方法直接渲染,需要在view
+中写视图函数
+16.出现403错误,在表单末尾添加{%csrf_token%},django会自动生成一个hidden的input标签
+17.from django.contrib.auth import authenticate, login
+       user = authenticate(username=username, password=password)
+       login(request, user)
+       # authenticate方法自动将从前端提取的字段和数据库(User表)里比对,并返还查询的对象
+       若查询不到,则返回None.authenticate方法,默认与User表中的username和,password
+       字段进行比对
+       # login方法,login(request, user)第二个参数为数据库返还的对象,可能给该对象绑定
+       了session_id,以记录登录状态
+       # login是内置函数,自己不要使用!
+18.查询语句user = UserProfile.objects.get(username=username),如果为空,或者有两个
+或以上的结果都会报错
+19.重载authenticate方法:
+from django.contrib.auth.backends import ModelBackend
+from django.db.models import Q
+a.在任意一个视图中,定义一个继承自ModelBackend的类,重写authenticate
+b.Q用来作交并集处理,如user=UserProfile.objects.get(Q(username=username)|Q(email=username),Q(password=password))
+c.在settings中配置AUTHENTICATION_BACKENDS变量,值为重写的类的路径,元组形式
+20.forms表单验证,若输入不合法就直接返回错误,无需进行数据库查询,给数据库减负
+21.验证码使用及定制表单错误信息:captcha=CaptchaField(error_messages={'invalid': '验证码错误'}),error_messages
+参数让你覆盖字段引发的异常中的默认信息.传递的是一个字典,其键为你想覆盖的错误信息
+22.注册的流程是,用户提交邮箱,密码,和验证码,然后系统会发一封确认邮件给用户注册的邮箱,包含确认链接.用户点击链接后,注册成功
+23.用户信息填错或表单验证失败后进行信息回填,用value方法,如value="{{ registerform.email.value }}"
+24.表单某个字段验证失败时,相应的字段名和错误信息会绑定在表单的errors中
+25.当一个视图中的get和post方法一个有参数一个没参数时,表单action不能反转同一个url最简单的解决方法是写两个视图函数
+26.子模板继承父模板时,要重新{% load staticfiles %},否则会报少一个block的错误
+27.模板继承有向上传递性,request参数将从相应的子模板传递至父模板
+28.上传文件需要在settings配置两个参数MEDIA_URL,MEDIA_ROOT,用于指明用户上传文件存放路径,是相对路径
+29.处理media(用户上传文件)等静态文件时,要将其配置到settings中TEMPLATES下的一个上下文处理器中,这样才能将{{MEDIA_URL}}
+等传递到模板中.特别注意,需要给media配置相应的视图函数去处理相关的url(系统内置server方法),最后一个参数是一个字典,需要
+将静态文件的跟路径传递进去,key固定为"document_root",如:url('^media/(?P<path>.*)&', serve, {"document_root": MEDIA_ROOT})
+30.$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$
+31.分页模块,pure-pagination详见org_list.html
+32.筛选查询将所需参数以查询字符串的形式递交,再从后台获取到前台,惊醒处理.详见org_list.html,organization.views
+33.django似乎支持在查库结果列表(QuerySet)中进行二次查询,如orgs = orgs.filter(city_id=int(city_id))
+34.CourseOrg表有个外键字段(city)关联City表,在CourseOrg表内其实保存的是city_id字段(所有外键都是),而调用其city
+属性拿到的值似乎为city.name
+35.JSON格式是双引号!!!
+36.实例化继承自forms.ModelForm表单(此时实际是一串HTML代码)后调用save()方法可直接存入数据库,并返回一个Model对象
+37.django ORM外键反向引用,例:course_org是一个CourseOrg模型的实例,Course表通过外键与其关联.此时course_org对象有
+个自动生成的变量(属性?),course_set(表名小写_set)来反向取这个course_org的所有course
+38.if request.user.is_authenticated():在任何需要判断登录状态的地方都可以直接用
+39.Jquery中传递csrf_token：
+beforeSend: function (xhr, settings) {
+    xhr.setRequestHeader("X-CSRFToken", "{{ csrf_token }}");
+}
+当没有表单时,必须通过Jquery给Header中添加X-CSRFToken字段,值为{{ csrf_token }},是一个值.注意与表单中不同的是,
+{% csrf_token %}是在表单中生成一段html代码
+40.数据库查询操作User.objects.filter(username=username)[.all()]后面不管跟不跟all方法都为Queryset类型,可对其
+直接进行delete操作
+41.当数据库某个字段为choices属性时,直接调用会显示数据库内存的字符.应调用get_字段名_display方法,固定写法
+42.模板里只能使用无参数方法,且不允许带括号
+43.热门课程:按点击量逆序排序;推荐相关课程:keywor/tag思想,将课程添加一个tag字段,若拥有相同tag,则认为是相关课程
+44.做收藏操作时,收藏按钮都请求同一个接口;不同页面的收藏情况显示(刷新后消失的问题),在对应的视图函数里查收藏表(登录的前提
+下)若有记录,则返回一个标识符(布尔值)给前端模板,在前端再判断.
+45.外键字段不能有默认值,只能使用null=True,blank=True.
+46.外键是存在于一对多关系中"多"的那一方,当没有外键关联时,可创建方法来补充一些功能
+47.外键指向模型对象?
+48.UserCourse.objects.filter(user_id__in=user_ids).QuerySet接受数组作为过滤条件,在字段名后加__in
+49.django提供一个login_required装饰器来做视图函数的登录访问限制.类视图的登录限制也是一个类,放在utils目录下.其本质
+也是为dispatch函数添加了一个login_required装饰器.被装饰的类视图只需继承该类即可,注意有继承的先后顺序(从左到右)
+50.css,js代码要放到对应block中,否则可能无反应
+51.根路径下无法通过视图向其传递标志位来定位一些元素,且无法满足其子模板也需要定位这些元素(如收藏,选定样式),仍需要挨个定
+位,可采用request.path|slice:'7' == '/course'.注意:path为相对路径,不包含域名;从'/'开始匹配;表示的是相对url切取
+前7位为/course.根路径表示为request.path == '/'
+52.QuerySet可以再做各种过滤,筛选,排序工作;
+53.用表的某个字段名后+两个下划线+属性名,可做各种操作.如teachers = teachers.filter(name__icontains=keywords)
+表示教师表中name字段下包含keywords的记录,i表示忽略大小写
+54.多对多表关系模型
+1.中间表,数据少时选用,要做联合索引
+2.冗余数据,数据大时查询效果最好(表结构简单)
+3.存值为json数组
+55.读写都可以加缓存,写走队列,从缓存读
+56.有关联的表字段不一定需要外键连接,可以在代码逻辑中实现关联,也可以在模型中通过函数关联等等
+57.由于request和user变量是全局的,故可以在UserProfile表中添加一个函数,来实现一些全局的功能
+58.在函数,类,方法内部进行import不会有循环引用的问题,因为只有在调用时才会import
+59.当有多个不同base页面时,注意所有相关的地方都要修改
+60.django自带logout函数,参数为request.HttpResponseRedirect函数做重定向,reverse函数做url反转(通过name获取地址)
+页面跳转时不要重新渲染一个页面而是应该重定向到新的页面!!!否则可能因为没有渲染某些元素而造成页面内容为空;而重定向是重新
+进入那个view,不单纯只是渲染了个html页面
+61.forloop.counter|divisibleby:5,循环的次数是5的倍数时;forloop.counter|add:2,循环次数加2
+62.全局404;500配置:
+debug=False;ALLOWED_HOSTS = ['*'];生产环境django不再代理静态文件,需像media一样配置访问url,以及STATIC_ROOT;
+urls文件中添加handler404(固定) = 'users.views.page_not_found'
+63.xadmin补充字段:
+ordering = ['-click_nums'] # 按点击数逆序排列
+readonly_fields = ['click_nums'] # 只读字段,不能修改
+exclude = ['fav_nums'] # 排除字段(不显示字段)
+list_editable = ['degree', 'desc'] # 在列表页提供编辑接口
+relfield_style = 'fk-ajax' # 存在于被外键指向的表中,以ajax方式搜索外键内容(避免内容过多时性能低查找难的问题)
+refresh_times = [3, 5] # 提供一个3秒或者5秒自动刷新页面的接口
+inlines = [LessonInline,] # 内联表格,添加完课程后可以在当前页面添加课程的章节和下载资源,只能一层嵌套,方便添加数据
+用一张表继承另一张表,则拥有其所有属性,数据;Meta信息中设置proxy=True,则不会新生成一张表.完成两个管理器管理同一张表
+重写queryset方法,可对表内容进行管理(排序,过滤等)
+def queryset(self):
+    qs = super(BannerCourseAdmin, self).queryset() # 得到queryset对象
+    return qs.filter(is_banner=True)
+表的函数名也可以直接放在list_display列表中,但是不是存在表中的内容,故不能排序.
+可在函数以后添加func.short_description = 'xx'属性来为某函数在后台中取别名
+重写save_models方法,可在对表进行保存操作时(包括新增,或者修改),进入到此方法中加入相应的逻辑,如推到redis中
+def save_models(self):
+    obj = self.new_obj # 固定写法获取某个对象
+64.在Django 中有3种风格的继承:
+通常，你只想使用父类来持有一些信息，你不想在每个子模型中都敲一遍。这个类永远不会单独使用，所以你要使用抽象基类。
+如果你继承一个已经存在的模型且想让每个模型具有它自己的数据库表，那么应该使用多表继承。
+最后，如果你只是想改变一个模块Python 级别的行为，而不用修改模型的字段，你可以使用代理模型。
+65.字符串字段例如CharField和TextField要避免使用null;null纯粹是数据库范畴的概念，而blank是数据验证范畴的
+66.id = models.AutoField(primary_key=True);主键字段是只读的。如果你改变了一个已存在对象上的主键并且保存的话,会
+创建一个新的对象,而不是覆盖旧的.
+67.ManyToManyField、OneToOneField和FileField字段不能使用unique设置;unique本身意味着一个索引的创建,不需要再指
+定db_index
+68.DateField.auto_now:每次保存对象时,自动设置该字段为当前时间.用于"最后一次修改"的时间戳。注意，它总是使用当前日期
+；它不只是一个默认值,你可以覆盖
+DateField.auto_now_add:当对象第一次被创建时自动设置当前时间.用于创建时间的时间戳,它总是使用当前日期；和你可以覆盖的
+那种默认值不一样.auto_now或者auto_now_add为True将为让这个字段同时得到editable=False和blank=True这两个设置
+69.元信息:先按照pub_date的倒序排序,再按照author的正序排序:ordering = ['-pub_date','author']向ordering属性添加
+的每个字段都会产生你数据库的开销,添加的每个外键也会隐式包含它的默认顺序.unique_together=(("driver", "restaurant"),)
+一个元组的元组，组合起来的时候必须是唯一的.不能用在ManyToManyField中!
+70.本质上，可以创建、过滤、切片和传递查询集而不用真实操作数据库。在你对查询集做求值之前，不会发生任何实际的数据库操作
+使用以下方法将对查询集求值:迭代,切片(一个未求值的查询集进行切片通常返回另一个未求值的QuerySet，但此QuerySet不能再做
+过滤、排序操作,如果你使用切片的”step“参数，Django将执行数据库查询并返回一个列表),序列化,repr(),len(),list(),bool
+(如果你需要知道是否存在至少一条记录(而不需要真实的对象)，使用exists()将更加高效)
+71.比较相同模型实例上不同字段之间值:查找comments数目多于pingbacks的Entry:objects.filter(n_comments__gt=F('n_pingbacks')*2)
+F()函数在数据库层面操作数据,而不是python层面,故速度更快
+72.每个查询集都包含一个缓存来最小化对数据库的访问,故尽量对QuerySet进行过滤(还可以防止中途有数据添加或删除带来的影响)
+73.一对多关联关系的前向访问在第一次访问关联的对象时被缓存,以后对同一个对象的外键的访问都使用缓存
+74.一次性给关联的对象集赋值:b.entry_set=[e1,e2],e1和e2可以是Entry实例,也可以是主键的整数值
+75.对于使用嵌套查询和了解数据库服务器的性能特征(如果有疑问,做基准测试)要谨慎;MySQL不能很好地
+优化嵌套查询,在这些情况下,提取值列表然后将其传递到第二个查询中更有效.即执行两个查询,而不是一个
+76.模型内重写save()方法：
+def save(self, *args, **kwargs):
+    do_something()
+    super(Blog, self).save(*args, **kwargs) # Call the "real" save() method.
+    do_something_else()
+77.只更新表内部分字段:product.save(update_fields=['name']);指定update_fields 将强制使用更新操作
+78.使用QuerySet.values()和values_list():
+当你仅仅想要一个带有值的字典或者列表,并不需要使用ORM模型对象时,可以适当使用values().对于在模板代码中替换模型对象,这样
+会非常有用——只要字典中带有的属性和模板中使用的一致,就没问题.
+79.如果一个模型具有默认的顺序(Meta.ordering),并且你并不需要它,通过在查询集上无参调用order_by()来移除它
+数据库添加索引可能有助于提升排序性能
+80.如果你打算设置AUTH_USER_MODEL,你应该在创建任何迁移或者第一次运行manage.py migrate前设置它;引用用户模型:
+models.ForeignKey(settings.AUTH_USER_MODEL)
+81.ModelForm表单用来处理FILE类型很方便,文件对象会保存在相应的FileField的upload_to参数指定的地方,实例化的表单实际
+为模型对象(数据库记录),当有外键时,可先对表单对象做save(commit=Falese),返回当前表单对象(未保存,且数据不完整,用一个
+新变量接收),然后再对此对象进行关联对象的绑定,记得需要再做save操作,当有多对多关系时,记得最后还要调用最开始表单对象的
+save_m2m()方法:
+uploadform = UploadForm(request.POST, request.FILES)
+if uploadform.is_valid():
+    to_class = request.POST.get('to_class', '')  # 外键字段
+    class_obj = Class.objects.get(name=to_class)  # 关联对象
+    upload_obj = uploadform.save(commit=False)  # 尚未入库的表单对象,用一个新的表示模型的变量接收
+    upload_obj.to_class = class_obj  # 绑定关联对象
+    upload_obj.save()  # 再做save
+    [uploadform.save_m2m()] # 若有多对多关系时,要调用原表单对象的save_m2m()方法
+82.在python中,虽然有GIL,但是一个线程陷入到网络IO的时候,GIL是解锁的.因此从调用开始到调用结束,减去CPU切换到其他上下文
+的时间,是可以多线程的.现象是,在此种状况下可以观测到短暂的pythonCPU用量超过100%.单核的python,在小范围内,其随着并发数
+上升,性能会跟着上升
+83.在就绪通知技术上,有两种大的模式——就绪事件通知和异步IO.其差别简要来说有两点,就绪通知维护一个状态,由用户读取;而异步IO
+由系统调用用户的回调函数,就绪通知在数据就绪时就生效,而异步IO直到数据IO完成才发生回调.
+84.表单字段级别或表单级别的错误信息永远比模型字段级别的错误信息优先,模型字段的错误信息只用于模型验证步骤引发ValidationError
+的时候，且不会有对应的表单级别的错误信息;cleaned_data=form.cleaned_data,obj.attr=cleaned_data['attr']
+85.validator验证器是一个可调用的对象,它接受一个值,并在不符合一些规则时抛出ValidationError异常,在模型和表单验证中都
+可以用到,ex:validators=[validate_even],列表类型
+
+http://python.usyiyi.cn/documents/django_182/misc/design-philosophies.html#cache-design-philosophy

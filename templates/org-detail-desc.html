@@ -1,0 +1,15 @@
+{% extends 'org_base.html' %}
+{% load staticfiles %}
+{% block title %}机构介绍{% endblock %}
+{% block org_logo %}{{ MEDIA_URL }}{{ course_org.image }}{% endblock %}
+{% block org_name %}{{ course_org.name }}{% endblock %}
+{% block custom_bread %}机构介绍{% endblock %}
+{% block right %}
+    <div class="right companycenter layout">
+        <div class="head">
+            <h1>机构介绍</h1>
+            <a class="green fr more" href="org-detail-desc.html">查看更多 > </a>
+        </div>
+        <div class="cont">&nbsp; &nbsp; {{ course_org.desc }}<a href="/company/desc/22/"><span class="green">[查看更多]</span></a></div>
+    </div>
+{% endblock %}

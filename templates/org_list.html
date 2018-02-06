@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load staticfiles %}
+{% block title %}课程机构首页-元智在线网{% endblock %}
+{% block content %}
+    <section>
+        <div class="wp butler_list_box list">
+            <div class='left'>
+                <div class="listoptions">
+                    <ul>
+                        <li>
+                            <h2>机构类别</h2>
+                            <div class="cont">
+                                <a href="?city={{ city_id }}"><span
+                                        class="{% ifequal category '' %}active2{% endifequal %}">全部</span></a>
+
+                                <a href="?ct=kcjg&city={{ city_id }}"><span
+                                        class="{% ifequal category 'kcjg' %}active2{% endifequal %}">培训机构</span></a>
+                                <a href="?ct=gx&city={{ city_id }}"><span
+                                        class="{% ifequal category 'gx' %}active2{% endifequal %}">高校</span></a>
+
+                                <a href="?ct=gr&city={{ city_id }}"><span
+                                        class="{% ifequal category 'gr' %}active2{% endifequal %}">个人</span></a>
+
+                            </div>
+                        </li>
+                        <li>
+                            <h2>所在地区</h2>
+                            <div class="more">更多</div>
+                            <div class="cont">
+                                <a href="?ct={{ category }}">
+                                    <span class="{% ifequal city_id '' %}active2{% endifequal %}">全部</span></a>
+                                {#  如果后台模板传回的city_id值为空字符串,则表示用户未进行城市筛选,显示高亮全部  #}
+                                {% for city in cities %}
+                                    <a href="?ct={{ category }}&city={{ city.id }}"><span
+                                            class="{% ifequal city.id|stringformat:'i' city_id %}active2{% endifequal %}">{{ city.name }}</span></a>
+                                    {# city.id|stringformat:'i'自带过滤器,将int转为str,固定写法 #}
+                                    {#                用户筛选城市时将城市id传入后台进行筛选                    #}
+                                    {#    通过查询字符串的形式传递,后台通过request.GET.get获取,key与传递的key对应    #}
+                                {% endfor %}
+
+
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="all">共<span class="key">{{ org_nums }}</span>家</div>
+                <div class="butler_list company list">
+                    <div class="layout">
+                        <div class="head">
+                            <ul class="tab_header">
+                                <li class="{% if sort == '' %}active{% endif %}"><a
+                                        href="?ct={{ category }}&city={{ city_id }}">全部</a></li>
+                                <li class=""><a href="?sort=students&ct={{ category }}&city={{ city_id }}"
+                                                class="{% if sort == 'students' %}active{% endif %}">学习人数 &#8595;</a>
+                                </li>
+                                <li class=""><a href="?sort=course_nums&ct={{ category }}&city={{ city_id }}"
+                                                class="{% if sort == 'course_nums' %}active{% endif %}">课程数 &#8595;</a>
+                                </li>
+                                {# 在url里加上&ct={{ category }}&city={{ city_id }}相等于记住其他选项,而不会将已选项清空 #}
+                            </ul>
+                        </div>
+                        {% for org in orgs.object_list %}
+                            <dl class="des difdes">
+                                <dt>
+                                    <a href="{% url 'org:org_home' org.id %}">
+                                        <img width="200" height="120" src="{{ MEDIA_URL }}{{ org.image }}"/>
+                                    </a>
+                                </dt>
+                                <dd>
+                                    <div class="clearfix">
+                                        <a href="{% url 'org:org_home' org.id %}">
+                                            <h1>{{ org.name }}</h1>
+                                            <div class="pic fl">
+
+                                                <img src="{% static 'images/authentication.png' %}"/>
+
+                                                <img src="{% static 'images/gold.png' %}"/>
+
+                                            </div>
+                                        </a>
+                                    </div>
+                                    <ul class="cont">
+                                        <li class="first"><p class="pic9">课程数：<span>1</span></p>
+                                            <p class="c7">学习人数：<span>1000</span></p></li>
+                                        <li class="c8" style="padding-left:18px;">{{ org.address }}</li>
+                                        <li class="pic10" style="padding-left:18px;">经典课程：
+
+                                            <a href="/diary/19/">c语言基础入门</a>
+
+                                            <a href="/diary/16/">数据库基础</a>
+
+                                        </li>
+                                    </ul>
+                                </dd>
+                                <div class="buy start_groupbuy jsShowPerfect2" data-id="22"><br/>联系<br/>服务</div>
+                            </dl>
+                        {% endfor %}
+
+
+                    </div>
+                    <div class="pageturn">
+                        <ul class="pagelist">
+                            {% if orgs.has_previous %}
+                                <li class="long"><a href="?{{ orgs.previous_page_number.querystring }}">上一页</a></li>
+                                {#              如果有前一页,注意href的写法                  #}
+                            {% endif %}
+
+                            {% for page in orgs.pages %}
+                                {% if page %}
+                                    {% ifequal page orgs.number %}
+                                        <li class="active"><a href="?{{ page.querystring }}">{{ page }}</a></li>
+                                        {#           如果用户点击的是当前页面,跳转当前页面                     #}
+                                    {% else %}
+                                        <li><a href="?{{ page.querystring }}" class="page">{{ page }}</a></li>
+                                        {#             如果点击的不是当前页面                #}
+                                        {# 每个页面的href都为?{{ page.querystring }},实际表示为url/page=n  #}
+                                        {#         可在后面用&接着加参数,用以筛选功能            #}
+                                    {% endifequal %}
+                                {% else %}
+                                    <li class="none"><a href="">...</a></li>
+                                    {#               内容过多时的...                     #}
+                                {% endif %}
+                            {% endfor %}
+                            {% if orgs.has_next %}
+                                {#              下一页的分页逻辑                  #}
+                                <li class="long"><a href="?{{ orgs.next_page_number.querystring }}">下一页</a></li>
+                            {% endif %}
+
+
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="right companyright">
+                <div class="head">我要学习</div>
+                <form class="rightform" id="jsStayForm">
+                    <div>
+                        <img src="{% static 'images/rightform1.png' %}"/>
+                        <input type="text" name="name" id="companyName" placeholder="名字" maxlength="25"/>
+                    </div>
+                    <div>
+                        <img src="{% static 'images/rightform2.png' %}"/>
+                        <input type="text" name="mobile" id="companyMobile" placeholder="联系电话"/>
+                    </div>
+                    <div>
+                        <img src="{% static 'images/rightform3.png' %}"/>
+                        <input type="text" name="course_name" id="companyAddress" placeholder="课程名" maxlength="50"/>
+                    </div>
+                    <p class="error company-tips" id="jsCompanyTips"></p>
+                    {% csrf_token %}
+                    <input class="btn" type="text" id="jsStayBtn" value="立即咨询 >"/>
+
+                </form>
+            </div>
+
+            <div class="right companyrank layout">
+                <div class="head">授课机构排名</div>
+
+                {% for hot_org in hot_orgs %}
+                    <dl class="des">
+                        <dt class="num fl">{{ forloop.counter }}</dt>
+                        <dd>
+                            <a href="/company/2/"><h1>{{ hot_org.name }}</h1></a>
+                            <p>{{ hot_org.city }}</p>
+                        </dd>
+                    </dl>
+                {% endfor %}
+
+
+            </div>
+        </div>
+    </section>
+{% endblock %}

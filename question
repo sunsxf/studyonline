@@ -1,0 +1,4 @@
+1.form表单验证,password字段显示{NameError}name 'password' is not defined
+2.自定义表单错误信息?
+3.teacher = Teacher.objects.get(id=teacher_id)  不用做int(teacher_id)强制转换也能查询出数据?
+4.格式化字符串(字典)
